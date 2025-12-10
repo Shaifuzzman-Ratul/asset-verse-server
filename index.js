@@ -29,10 +29,21 @@ async function run() {
         const db = client.db('asset-verse-db');
         const userCollection = db.collection('users');
 
-        // users add 
+        // users post method
         app.post('/users', async (req, res) => {
             const user = req.body;
             const result = await userCollection.insertOne(user);
+            res.send(result);
+        })
+        // users get method
+        app.get('/users', async (req, res) => {
+            const query = {}
+            const { email } = req.query;
+            if (email) {
+                query.email = email;
+            }
+            const cursor = userCollection.find(query);
+            const result = await cursor.toArray();
             res.send(result);
         })
 
