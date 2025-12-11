@@ -47,8 +47,21 @@ async function run() {
             const result = await cursor.toArray();
             res.send(result);
         })
+        // get method for asset 
+        app.get('/allAsset', async (req, res) => {
+            const query = {};
+            const { email } = req.query;
+            if (email) {
+                query.email = email;
+            }
+            const option = { sort: { createAt: -1 } }
+            const cursor = assetCollection.find(query, option);
+            const result = await cursor.toArray();
+            res.send(result);
 
-        // get method for asset fron hr
+
+        })
+        // post method for asset fron hr
         app.post('/allAsset', async (req, res) => {
             const allAsset = req.body;
             const result = await assetCollection.insertOne(allAsset);
