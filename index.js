@@ -28,6 +28,7 @@ async function run() {
         // create db
         const db = client.db('asset-verse-db');
         const userCollection = db.collection('users');
+        const assetCollection = db.collection('allAssets')
 
         // users post method
         app.post('/users', async (req, res) => {
@@ -44,6 +45,13 @@ async function run() {
             }
             const cursor = userCollection.find(query);
             const result = await cursor.toArray();
+            res.send(result);
+        })
+
+        // get method for asset fron hr
+        app.post('/allAsset', async (req, res) => {
+            const allAsset = req.body;
+            const result = await assetCollection.insertOne(allAsset);
             res.send(result);
         })
 
