@@ -31,6 +31,7 @@ async function run() {
         const userCollection = db.collection('users');
         const assetCollection = db.collection('allAssets')
         const requestCollection = db.collection('assetRequest');
+        const employeeAffiliationsCollection = db.collection('employeeAffiliations')
 
 
         // users post method
@@ -68,6 +69,17 @@ async function run() {
             const result = await assetCollection.insertOne(allAsset);
             res.send(result);
         })
+        // put method for allasset
+        app.put('/allAsset/:id', async (req, res) => {
+            const { id } = req.params;
+            const updateData = req.body;
+            const result = await assetCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: updateData }
+            );
+            res.send(result);
+        });
+
 
         // delete method for allassets
         app.delete('/allAsset/:id', async (req, res) => {
@@ -97,6 +109,38 @@ async function run() {
             data.requestDate = new Date();
 
             const result = await requestCollection.insertOne(data);
+            res.send(result);
+        })
+        // get method for asssetRequest
+        app.get('/assetRequest', async (req, res) => {
+            const query = {};
+            const { email } = req.query;
+            if (email) {
+                query.requesterEmail = email;
+            }
+            const cursor = requestCollection.find(query);
+            const result = await cursor.toArray();
+            res.send(result);
+        })
+        // put api for assetRequest
+        app.put('/assetRequest/:id', async (req, res) => {
+            const { id } = req.params;
+            const updateData = req.body;
+            const result = await requestCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: updateData }
+            );
+            res.send(result);
+        });
+
+        // get method for affiliations
+        app.get('/employeeAffiliations', async (req, res) => {
+            const query = {};
+            const { hrEmail } = req.body;
+            if (hrEmail) {
+                query.hrEmail = hrEmail;
+            }
+            const result = await employeeAffiliationsCollection.find(query).toArray();
             res.send(result);
         })
         // Send a ping to confirm a successful connection
