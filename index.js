@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const app = express();
 require('dotenv').config();
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 const port = process.env.PORT || 3000;
 
@@ -27,8 +27,11 @@ async function run() {
 
         // create db
         const db = client.db('asset-verse-db');
+        // create collectin
         const userCollection = db.collection('users');
         const assetCollection = db.collection('allAssets')
+        const requestCollection = db.collection('assetRequest');
+
 
         // users post method
         app.post('/users', async (req, res) => {
@@ -52,14 +55,12 @@ async function run() {
             const query = {};
             const { email } = req.query;
             if (email) {
-                query.email = email;
+                query.userEmail = email;
             }
             const option = { sort: { createAt: -1 } }
             const cursor = assetCollection.find(query, option);
             const result = await cursor.toArray();
             res.send(result);
-
-
         })
         // post method for asset fron hr
         app.post('/allAsset', async (req, res) => {
@@ -68,6 +69,36 @@ async function run() {
             res.send(result);
         })
 
+        // delete method for allassets
+        app.delete('/allAsset/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await assetCollection.deleteOne(query);
+            res.send(result);
+        })
+        // update method 
+        app.put('/allAsset/:id', async (req, res) => {
+            const { id } = req.params
+            const data = req.body
+
+            const filter = { _id: new ObjectId(id) }
+            const update = {
+                $set: data
+            }
+            const result = await assetCollection.updateOne(filter, update)
+            res.send(result)
+        })
+
+        // 
+
+        // post method for assetRequest
+        app.post('/assetRequest', async (req, res) => {
+            const data = req.body;
+            data.requestDate = new Date();
+
+            const result = await requestCollection.insertOne(data);
+            res.send(result);
+        })
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
