@@ -143,6 +143,15 @@ async function run() {
             const result = await employeeAffiliationsCollection.find(query).toArray();
             res.send(result);
         })
+
+        // post method for affiliations
+        app.post('/employeeAffiliations', async (req, res) => {
+            const affiliation = req.body;
+            affiliation.affiliationDate = new Date();
+            affiliation.status = affiliation.status || 'active';
+            const result = await employeeAffiliationsCollection.insertOne(affiliation);
+            res.send(result);
+        });
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
