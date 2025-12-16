@@ -51,6 +51,38 @@ async function run() {
             const result = await cursor.toArray();
             res.send(result);
         })
+        // update method
+        // PATCH user profile (own profile only)
+        app.patch('/users/:id', async (req, res) => {
+            const { id } = req.params;
+            const { name, profileImage } = req.body;
+
+            const user = await userCollection.findOne({ _id: new ObjectId(id) });
+
+            if (!user) {
+                return res.status(404).send({ message: "User not found" });
+            }
+
+            const updateData = {};
+
+            if (user.role === "hr") {
+                if (name) updateData.hrName = name;
+                if (profileImage) updateData.companyLogo = profileImage;
+            }
+
+            if (user.role === "employee") {
+                if (name) updateData.employeeName = name;
+                if (profileImage) updateData.employeeLogo = profileImage;
+            }
+
+            const result = await userCollection.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: updateData }
+            );
+
+            res.send(result);
+        });
+
         // get method for asset 
         app.get('/allAsset', async (req, res) => {
             const query = {};
@@ -118,7 +150,8 @@ async function run() {
             if (email) {
                 query.requesterEmail = email;
             }
-            const cursor = requestCollection.find(query);
+            const option = { sort: { createAt: -1 } }
+            const cursor = requestCollection.find(query, option);
             const result = await cursor.toArray();
             res.send(result);
         })
@@ -136,7 +169,7 @@ async function run() {
         // get method for affiliations
         app.get('/employeeAffiliations', async (req, res) => {
             const query = {};
-            const { hrEmail } = req.body;
+            const { hrEmail } = req.query;
             if (hrEmail) {
                 query.hrEmail = hrEmail;
             }
@@ -152,6 +185,22 @@ async function run() {
             const result = await employeeAffiliationsCollection.insertOne(affiliation);
             res.send(result);
         });
+
+        // method for delete affiliations 
+        app.delete("/employeeAffiliations/:id", async (req, res) => {
+            const id = req.params.id;
+
+            const result = await employeeAffiliationsCollection.deleteOne({
+                _id: new ObjectId(id),
+            });
+
+            if (result.deletedCount === 1) {
+                res.send({ success: true });
+            } else {
+                res.status(404).send({ message: "Not found" });
+            }
+        });
+
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
