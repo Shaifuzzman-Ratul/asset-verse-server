@@ -32,7 +32,7 @@ async function run() {
         const assetCollection = db.collection('allAssets')
         const requestCollection = db.collection('assetRequest');
         const employeeAffiliationsCollection = db.collection('employeeAffiliations')
-
+        const packagesCollection = db.collection('packages');
 
         // users post method
         app.post('/users', async (req, res) => {
@@ -52,34 +52,27 @@ async function run() {
             res.send(result);
         })
         // update method
-        // PATCH user profile (own profile only)
+
         app.patch('/users/:id', async (req, res) => {
             const { id } = req.params;
             const { name, profileImage } = req.body;
-
             const user = await userCollection.findOne({ _id: new ObjectId(id) });
-
             if (!user) {
-                return res.status(404).send({ message: "User not found" });
+                return;
             }
-
             const updateData = {};
-
             if (user.role === "hr") {
                 if (name) updateData.hrName = name;
                 if (profileImage) updateData.companyLogo = profileImage;
             }
-
             if (user.role === "employee") {
                 if (name) updateData.employeeName = name;
                 if (profileImage) updateData.employeeLogo = profileImage;
             }
-
             const result = await userCollection.updateOne(
                 { _id: new ObjectId(id) },
                 { $set: updateData }
             );
-
             res.send(result);
         });
 
@@ -198,6 +191,27 @@ async function run() {
                 res.send({ success: true });
             } else {
                 res.status(404).send({ message: "Not found" });
+            }
+        });
+
+
+        // packages post method
+        app.post('/packages', async (req, res) => {
+            const packages = req.body;
+
+            const result = await packagesCollection.insertMany(packages);
+            res.send(result);
+        });
+
+        // get method packages
+        // Get all packages
+        app.get('/packages', async (req, res) => {
+            try {
+                const packages = await packagesCollection.find({}).toArray();
+                res.send(packages);
+            } catch (error) {
+                console.error(error);
+
             }
         });
 
