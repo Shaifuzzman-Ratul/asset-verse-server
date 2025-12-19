@@ -3,6 +3,7 @@ const cors = require('cors');
 const app = express();
 require('dotenv').config();
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const stripe = require('stripe')(process.env.STRIPE_KEY);
 
 const port = process.env.PORT || 3000;
 
@@ -33,6 +34,57 @@ async function run() {
         const requestCollection = db.collection('assetRequest');
         const employeeAffiliationsCollection = db.collection('employeeAffiliations')
         const packagesCollection = db.collection('packages');
+
+        // payment related apis
+        app.post('/create-checkout-session', async (req, res) => {
+            try {
+                const { packageId, hrmail } = req.body;
+
+                if (!packageId || !hrmail) {
+                    return;
+                }
+
+                const pkg = await packagesCollection.findOne({
+                    _id: new ObjectId(packageId),
+                });
+
+                if (!pkg) {
+                    return;
+                }
+
+                const amount = pkg.price * 100;
+                const session = await stripe.checkout.sessions.create({
+                    // 
+                    line_items: [
+                        {
+                            price_data: {
+                                currency: 'usd',
+                                unit_amount: amount,
+                                product_data: {
+                                    name: pkg.name,
+                                },
+                            },
+                            quantity: 1,
+                        },
+                    ],
+                    mode: 'payment',
+                    success_url: `${process.env.SITE_DOMAIN}/dashboard/payment-success`,
+                    cancel_url: `${process.env.SITE_DOMAIN}/dashboard/payment-cancel`,
+                    metadata: {
+                        email: hrmail,
+                        packageId,
+                    },
+                });
+
+                res.send({ url: session.url });
+
+            } catch (error) {
+                console.error("STRIPE ERROR 👉", error);
+                res.status(500).send({ error: error.message });
+            }
+        });
+
+
 
         // users post method
         app.post('/users', async (req, res) => {
@@ -214,6 +266,7 @@ async function run() {
 
             }
         });
+
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
