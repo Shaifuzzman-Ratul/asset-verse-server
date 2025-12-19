@@ -68,7 +68,7 @@ async function run() {
                         },
                     ],
                     mode: 'payment',
-                    success_url: `${process.env.SITE_DOMAIN}/dashboard/payment-success`,
+                    success_url: `${process.env.SITE_DOMAIN}/dashboard/payment-success?packageId=${packageId}`,
                     cancel_url: `${process.env.SITE_DOMAIN}/dashboard/payment-cancel`,
                     metadata: {
                         email: hrmail,
@@ -126,6 +126,49 @@ async function run() {
                 { $set: updateData }
             );
             res.send(result);
+        });
+        // package api
+        app.patch('/users/hr/package', async (req, res) => {
+            const { hrEmail } = req.body;
+
+            if (!hrEmail) return
+            const hr = await userCollection.findOne({ email: hrEmail, role: 'hr' });
+
+            if (hr.packageLimit <= 0) {
+                return res.status(403).send({ message: "Package limit reached! Please upgrade." });
+            }
+
+
+
+
+            const result = await userCollection.updateOne(
+                { email: hrEmail, role: 'hr' },
+                { $inc: { packageLimit: -1, currentEmployees: 1 } }
+            );
+
+            res.send({ success: true, message: "Package updated", result });
+        });  // upgrade package
+
+        app.patch('/hr/package-update', async (req, res) => {
+            try {
+                const { hrEmail, packageId } = req.body;
+
+
+                const hr = await userCollection.findOne({ email: hrEmail, role: 'hr' });
+
+
+                const pkg = await packagesCollection.findOne({ _id: new ObjectId(packageId) });
+
+                const result = await userCollection.updateOne(
+                    { email: hrEmail, role: 'hr' },
+                    { $inc: { packageLimit: pkg.employeeLimit } }
+                );
+
+                res.send({ success: true, message: "Package limit incremented", result });
+            } catch (error) {
+                console.error(error);
+                res.status(500).send({ message: "Server error" });
+            }
         });
 
         // get method for asset 
